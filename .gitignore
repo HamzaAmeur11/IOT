@@ -1,0 +1,19 @@
+# Vagrant
+.vagrant/
+*.log
+
+# K3s sensitive files
+node-token
+server_key.pub
+
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
