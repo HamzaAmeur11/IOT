@@ -3,9 +3,11 @@
 *.log
 
 # K3s sensitive files
+k3s.yaml
 node-token
 server_key.pub
-
+argocd-password.txt
+QUICKSTART.md
 
 # OS files
 .DS_Store
