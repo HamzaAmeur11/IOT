@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Load IPs from ips.conf
+source /vagrant/ips.conf
+
 echo "========================================="
 echo "Installing K3s Server for Part 3"
 echo "========================================="
