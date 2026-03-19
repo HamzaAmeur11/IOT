@@ -1,0 +1,7 @@
+Grafana:     http://192.168.56.120:30300
+             Username: admin
+             Password: admin123
+
+Prometheus:  http://192.168.56.120:30090
+
+AlertManager: http://192.168.56.120:30093

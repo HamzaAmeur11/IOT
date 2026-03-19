@@ -1,35 +1,18 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: wil-playground
+  name: playground-app
   namespace: argocd
 spec:
   project: default
-  
-  # Source: Your application manifests
-  # For local testing, we'll use a local path
-  # In production, this would point to a git repository
   source:
-    repoURL: ${REPO_URL}
+    repoURL: https://github.com/HamzaAmeur11/Hameur-iot-manifests.git
     targetRevision: HEAD
-    path: .
-  
-  # Destination: Where to deploy
+    path: confs
   destination:
     server: https://kubernetes.default.svc
     namespace: dev
-  
-  # Sync policy
   syncPolicy:
     automated:
-      prune: true       # Remove resources that are no longer defined
-      selfHeal: true    # Automatically sync when differences detected
-      allowEmpty: false
-    syncOptions:
-    - CreateNamespace=true
-    retry:
-      limit: 5
-      backoff:
-        duration: 5s
-        factor: 2
-        maxDuration: 3m
+      prune: true
+      selfHeal: true

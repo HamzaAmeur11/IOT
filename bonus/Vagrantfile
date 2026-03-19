@@ -1,0 +1,33 @@
+require 'pathname'
+
+# Load IPs from ips.conf
+ips_path = Pathname.new(__dir__) + 'ips.conf'
+ips = {}
+if ips_path.exist?
+  File.readlines(ips_path).each do |line|
+    k, v = line.strip.split('=')
+    ips[k] = v
+  end
+else
+  raise "ips.conf not found!"
+end
+
+SERVER_IP = ips['SERVER_IP']
+
+Vagrant.configure("2") do |config|
+  config.vm.boot_timeout = 600
+  config.vm.box = "bento/ubuntu-22.04"
+
+  config.vm.define "HAMEUR-BONUS" do |bonus|
+    bonus.vm.hostname = "HAMEUR-BONUS"
+    bonus.vm.network "private_network", ip: SERVER_IP
+    bonus.vm.provider "virtualbox" do |v|
+      v.memory = 2048  # Monitoring stack needs more memory
+      v.cpus = 2
+      v.name = "bonus_HAMEUR-BONUS"
+    end
+    bonus.vm.provision "shell", path: "scripts/install_k3s.sh"
+    bonus.vm.provision "shell", path: "scripts/install_helm.sh"
+    bonus.vm.provision "shell", path: "scripts/deploy_monitoring.sh"
+  end
+end
