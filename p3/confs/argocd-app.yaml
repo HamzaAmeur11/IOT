@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/HamzaAmeur11/Hameur-iot-manifests.git
     targetRevision: HEAD
-    path: confs
+    path: .
   destination:
     server: https://kubernetes.default.svc
     namespace: dev
