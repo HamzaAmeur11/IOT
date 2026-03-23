@@ -59,7 +59,7 @@ IOTT/
 
 ### Overview
 Sets up a two-node Kubernetes cluster using K3s:
-- **Server Node (HAMEUR-S)**: Controller node at `192.168.42.110`
+- **Server Node (HAMEUR-S)**: Controller node at `192.168.56.110`
 - **Worker Node (HAMEUR-SW)**: Worker node at `192.168.42.111`
 
 ### Features
@@ -112,7 +112,7 @@ vagrant destroy -f
 Single K3s server with three web applications and Ingress routing using Traefik.
 
 ### Architecture
-- **Server Node**: `192.168.42.110`
+- **Server Node**: `192.168.56.110`
 - **Three Applications**: app1, app2, app3 (nginx-based)
 - **Ingress Controller**: Traefik (built-in with K3s)
 
@@ -155,8 +155,8 @@ vagrant ssh -c "kubectl apply -f /vagrant/ingress.yaml"
 Add entries to `/etc/hosts`:
 
 ```bash
-echo "192.168.42.110 app1.com" | sudo tee -a /etc/hosts
-echo "192.168.42.110 app2.com" | sudo tee -a /etc/hosts
+echo "192.168.56.110 app1.com" | sudo tee -a /etc/hosts
+echo "192.168.56.110 app2.com" | sudo tee -a /etc/hosts
 ```
 
 Test the applications:
@@ -164,7 +164,7 @@ Test the applications:
 ```bash
 curl app1.com        # Should display "app1"
 curl app2.com        # Should display "app2"
-curl 192.168.42.110  # Should display "app3" (default)
+curl 192.168.56.110  # Should display "app3" (default)
 ```
 
 ### Verification
@@ -189,7 +189,7 @@ vagrant destroy -f
 K3s cluster with ArgoCD for continuous deployment and GitOps workflows.
 
 ### Architecture
-- **Server Node**: `192.168.42.110`
+- **Server Node**: `192.168.56.110`
 - **ArgoCD**: GitOps deployment tool
 - **Sample Application**: "Wil's Playground"
 
@@ -217,12 +217,12 @@ The setup script will:
 ### Access Information
 
 **ArgoCD Dashboard**:
-- URL: https://192.168.42.110:30080
+- URL: https://192.168.56.110:30080
 - Username: `admin`
 - Password: Check `p3/argocd-password.txt`
 
 **Sample Application**:
-- URL: http://192.168.42.110:30081
+- URL: http://192.168.56.110:30081
 
 ### Deploy Sample Application
 
@@ -285,7 +285,7 @@ sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
 rm argocd-linux-amd64
 
 # Login
-argocd login 192.168.42.110:30080 --insecure
+argocd login 192.168.56.110:30080 --insecure
 ```
 
 ### Cleanup
@@ -369,7 +369,7 @@ vagrant up --provider=virtualbox
 
 ```bash
 # Fix kubeconfig server URL
-sed -i 's/127.0.0.1/192.168.42.110/g' k3s.yaml
+sed -i 's/127.0.0.1/192.168.56.110/g' k3s.yaml
 
 # Use from inside VM
 vagrant ssh -c "kubectl get nodes"

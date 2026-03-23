@@ -1,0 +1,42 @@
+require 'pathname'
+
+ips_path = Pathname.new(__dir__) + 'ips.conf'
+ips = {}
+if ips_path.exist?
+  File.readlines(ips_path).each do |line|
+    k, v = line.strip.split('=')
+    ips[k] = v if k && v
+  end
+else
+  raise "ips.conf not found!"
+end
+
+SERVER_IP = ips['SERVER_IP']
+
+Vagrant.configure("2") do |config|
+  config.vm.boot_timeout = 600
+  config.vm.box = "bento/ubuntu-22.04"
+
+  config.vm.define "HAMEUR-BONUS" do |bonus|
+    bonus.vm.hostname = "HAMEUR-BONUS"
+    bonus.vm.network "private_network", ip: SERVER_IP
+
+    bonus.vm.network "forwarded_port", guest: 30300, host: 30300, auto_correct: true
+    bonus.vm.network "forwarded_port", guest: 30090, host: 30090, auto_correct: true
+    bonus.vm.network "forwarded_port", guest: 30093, host: 30093, auto_correct: true
+
+    bonus.vm.provider "virtualbox" do |v|
+      v.memory = 4096
+      v.cpus   = 2
+      v.name   = "bonus_HAMEUR-BONUS"
+    end
+
+    # Mount the entire bonus folder as /vagrant (default) - subfolders included
+    # No extra synced_folder needed; /vagrant/scripts and /vagrant/helm-values
+    # are already accessible since the whole project root is mounted.
+
+    bonus.vm.provision "shell", path: "scripts/install_k3s.sh"
+    bonus.vm.provision "shell", path: "scripts/install_helm.sh"
+    bonus.vm.provision "shell", path: "scripts/deploy_monitoring.sh"
+  end
+end

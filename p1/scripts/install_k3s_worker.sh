@@ -9,7 +9,7 @@ WAIT_COUNT=0
 MAX_WAIT=120  # 4 minutes timeout (120 * 2 seconds)
 
 while [ ! -f /vagrant/output/node-token ] && [ $WAIT_COUNT -lt $MAX_WAIT ]; do
-  echo "Waiting for node-token... ($WAIT_COUNT/$MAX_WAIT)"
+  echo "Waiting for node-token... (z$WAIT_COUNT/$MAX_WAIT)"
   sleep 2
   WAIT_COUNT=$((WAIT_COUNT + 1))
 done
