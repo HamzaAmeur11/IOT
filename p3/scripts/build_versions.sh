@@ -1,85 +1,52 @@
 #!/bin/bash
-# Helper script to build and push different versions of the app to Docker Hub
+# Build and push v1 and v2 images to Docker Hub.
+# Run this ONCE from your local machine before running vagrant up.
+#
+# Usage: ./scripts/build_versions.sh <dockerhub-username>
+# Example: ./scripts/build_versions.sh hdameur12
 
-# Configuration
-DOCKER_USERNAME="${1:-}"
-DOCKER_PASSWORD="${2:-}"
-VERSION="${3:-v1}"
-REGISTRY_URL="https://registry.hub.docker.com"
-
-# Color codes
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
-
-# Error handling
 set -e
 
+DOCKER_USERNAME="${1:-}"
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
 if [ -z "$DOCKER_USERNAME" ]; then
-    echo -e "${RED}Error: Docker username not provided${NC}"
-    echo "Usage: ./build_versions.sh YOUR-USERNAME [password] [version]"
-    echo ""
-    echo "Examples:"
-    echo "  ./build_versions.sh myuser v1"
-    echo "  ./build_versions.sh myuser mypass v2"
+    echo -e "${RED}Error: Docker Hub username required${NC}"
+    echo "Usage: $0 <dockerhub-username>"
     exit 1
 fi
 
-echo -e "${BLUE}Building Docker images for IoT App${NC}"
-echo "========================================"
-echo "Docker Username: $DOCKER_USERNAME"
-echo "Version: $VERSION"
-echo "========================================"
+WEBAPP_DIR="$(dirname "$0")/../webapp"
 
-# Change to webapp directory
-cd "$(dirname "$0")/../webapp"
+build_and_push() {
+    local VERSION="$1"
+    local MESSAGE="$2"
+    echo -e "${BLUE}=== Building $DOCKER_USERNAME/iot-app:$VERSION ===${NC}"
 
-echo -e "${BLUE}[1/3] Building Docker image: $DOCKER_USERNAME/iot-app:$VERSION${NC}"
+    docker build \
+        --build-arg APP_VERSION="$VERSION" \
+        --build-arg APP_MESSAGE="$MESSAGE" \
+        -t "$DOCKER_USERNAME/iot-app:$VERSION" \
+        "$WEBAPP_DIR"
 
-# Modify Dockerfile temporarily to set correct version
-TEMP_DOCKERFILE=$(mktemp)
-cp Dockerfile "$TEMP_DOCKERFILE"
+    echo -e "${BLUE}=== Pushing $DOCKER_USERNAME/iot-app:$VERSION ===${NC}"
+    docker push "$DOCKER_USERNAME/iot-app:$VERSION"
+    echo -e "${GREEN}✓ $VERSION pushed successfully${NC}"
+}
 
-# Update the version in Dockerfile
-sed "s/ENV APP_VERSION=.*/ENV APP_VERSION=$VERSION/" Dockerfile > "$TEMP_DOCKERFILE"
+echo "Logging in to Docker Hub..."
+docker login
 
-# Build with temporary Dockerfile
-docker build -f "$TEMP_DOCKERFILE" -t "$DOCKER_USERNAME/iot-app:$VERSION" .
-
-# Cleanup
-rm "$TEMP_DOCKERFILE"
-
-echo -e "${GREEN}✓ Image built successfully${NC}"
-
-# Login if password provided
-if [ -n "$DOCKER_PASSWORD" ]; then
-    echo -e "${BLUE}[2/3] Logging in to Docker Hub${NC}"
-    echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-    echo -e "${GREEN}✓ Logged in successfully${NC}"
-else
-    echo -e "${BLUE}[2/3] Using existing Docker login${NC}"
-fi
-
-# Push to Docker Hub
-echo -e "${BLUE}[3/3] Pushing image to Docker Hub${NC}"
-docker push "$DOCKER_USERNAME/iot-app:$VERSION"
-
-echo -e "${GREEN}✓ Image pushed successfully${NC}"
-
-# Also tag as latest if this is latest version
-if [ "$VERSION" = "v2" ] || [ "$VERSION" = "latest" ]; then
-    echo ""
-    echo -e "${BLUE}Tagging as latest${NC}"
-    docker tag "$DOCKER_USERNAME/iot-app:$VERSION" "$DOCKER_USERNAME/iot-app:latest"
-    docker push "$DOCKER_USERNAME/iot-app:latest"
-    echo -e "${GREEN}✓ Latest tag updated${NC}"
-fi
+build_and_push "v1" "Hello from IoT App - version 1"
+build_and_push "v2" "Hello from IoT App - version 2"
 
 echo ""
-echo -e "${GREEN}========================================"
-echo "Success! Your images are now available:"
-echo "========================================"
-echo "Registry URL: https://hub.docker.com/r/$DOCKER_USERNAME/iot-app"
-echo "Pull command: docker pull $DOCKER_USERNAME/iot-app:$VERSION"
-echo -e "${NC}"
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}Both versions available on Docker Hub:${NC}"
+echo "  docker pull $DOCKER_USERNAME/iot-app:v1"
+echo "  docker pull $DOCKER_USERNAME/iot-app:v2"
+echo -e "${GREEN}========================================${NC}"

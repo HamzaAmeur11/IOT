@@ -16,7 +16,7 @@ spec:
       containers:
       - name: playground
         image: hdameur12/iot-app:v1
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         ports:
         - containerPort: 8888
         resources:

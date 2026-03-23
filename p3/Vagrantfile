@@ -6,7 +6,7 @@ ips = {}
 if ips_path.exist?
   File.readlines(ips_path).each do |line|
     k, v = line.strip.split('=')
-    ips[k] = v
+    ips[k] = v if k && v
   end
 else
   raise "ips.conf not found!"
@@ -21,22 +21,25 @@ Vagrant.configure("2") do |config|
   config.vm.define "HAMEUR-P3" do |s|
     s.vm.hostname = "HAMEUR-P3"
     s.vm.network "private_network", ip: SERVER_IP
+
+    # App port (k3d loadbalancer -> host)
     s.vm.network "forwarded_port", guest: 8888, host: 8888, auto_correct: true
+    # ArgoCD UI port-forward -> host
     s.vm.network "forwarded_port", guest: 8080, host: 8080, auto_correct: true
-    s.vm.network "forwarded_port", guest: 6443, host: 6443, auto_correct: true
-    
+
     s.vm.provider "virtualbox" do |v|
       v.memory = 4096
-      v.cpus = 2
-      v.name = "p3_HAMEUR-P3"
+      v.cpus   = 2
+      v.name   = "p3_HAMEUR-P3"
     end
-    
-    # Sync confs folder to VM
-    s.vm.synced_folder "confs", "/vagrant/confs", type: "virtualbox"
-    
+
+    s.vm.synced_folder "scripts", "/vagrant/scripts", type: "virtualbox"
+    s.vm.synced_folder "confs",   "/vagrant/confs",   type: "virtualbox"
+
     s.vm.provision "shell", path: "scripts/install_tools.sh"
     s.vm.provision "shell", path: "scripts/setup_k3d_cluster.sh"
     s.vm.provision "shell", path: "scripts/setup_argocd.sh"
     s.vm.provision "shell", path: "scripts/deploy_app.sh"
+    s.vm.provision "shell", path: "scripts/setup_portforward.sh"
   end
 end

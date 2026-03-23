@@ -8,6 +8,7 @@ node-token
 server_key.pub
 argocd-password.txt
 QUICKSTART.md
+*.kubeconfig
 
 # OS files
 .DS_Store
@@ -20,3 +21,8 @@ Thumbs.db
 *.swo
 *~
 kubectl
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.github

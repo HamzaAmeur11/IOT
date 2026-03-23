@@ -1,25 +1,39 @@
 #!/bin/bash
 set -e
 
-export KUBECONFIG=/home/vagrant/.kube/config
+export KUBECONFIG=/root/.kube/config
 
 echo "=== Creating dev namespace ==="
-kubectl create namespace dev || true
+kubectl create namespace dev 2>/dev/null || echo "Namespace dev already exists"
 
-echo "=== Deploying application ==="
+echo "=== Applying ArgoCD Application manifest ==="
+# This is the ONLY manifest we apply manually.
+# ArgoCD will read deployment.yaml / service.yaml / ingress.yaml
+# from GitHub and deploy them automatically.
+kubectl apply -f /vagrant/confs/argocd-app.yaml
 
-# Create deployment with wil42/playground image
-kubectl apply -f /vagrant/confs/deployment.yaml
+echo "=== Waiting for ArgoCD to sync the application ==="
+for i in $(seq 1 36); do
+    STATUS=$(kubectl get application playground-app -n argocd \
+        -o jsonpath='{.status.sync.status}' 2>/dev/null || echo "Pending")
+    HEALTH=$(kubectl get application playground-app -n argocd \
+        -o jsonpath='{.status.health.status}' 2>/dev/null || echo "Unknown")
+    echo "[$i/36] Sync: $STATUS | Health: $HEALTH"
+    if [ "$STATUS" = "Synced" ] && [ "$HEALTH" = "Healthy" ]; then
+        echo "Application synced and healthy!"
+        break
+    fi
+    sleep 10
+done
 
-# Create service
-kubectl apply -f /vagrant/confs/service.yaml
-
-# Create ingress
-kubectl apply -f /vagrant/confs/ingress.yaml || true
-
-echo "=== Waiting for deployment to be ready ==="
-kubectl wait --for=condition=ready pod -l app=playground -n dev --timeout=300s || true
-
-echo "=== Application deployed successfully ==="
-echo "=== Access the application at http://localhost:8888 ==="
-
+echo ""
+echo "=== Deployment complete ==="
+echo ""
+echo "Namespaces:"
+kubectl get ns | grep -E "argocd|dev"
+echo ""
+echo "Pods in dev:"
+kubectl get pods -n dev
+echo ""
+echo "App endpoint: http://localhost:8888"
+echo "ArgoCD UI:    https://localhost:8080  (run port-forward first)"

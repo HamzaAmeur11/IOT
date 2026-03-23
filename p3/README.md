@@ -1,188 +1,91 @@
-# Inception-of-Things: Part 3 - Vagrant-Based GitOps Solution
+# IoT - Part 3: K3d and Argo CD
 
-## Overview
+## Prerequisites (run on your local machine before `vagrant up`)
 
-This is a **complete Vagrant-based GitOps infrastructure** for 42 Inception-of-Things Part 3. The Vagrant VM automatically:
-
-- Installs Docker, kubectl, k3d, and ArgoCD CLI
-- Creates a K3d Kubernetes cluster with 1 server and 2 agents
-- Deploys ArgoCD for GitOps management
-- Deploys your application via GitOps
-- Exposes the application on port 8888 (accessible from the host)
-
-## New: Use Your Own App!
-
-See **[GITHUB_SETUP.md](GITHUB_SETUP.md)** to:
-- Push your web app to GitHub
-- Use GitHub Container Registry for Docker images
-- Set up GitHub Actions for automatic builds
-- Deploy via ArgoCD from your manifests repo
-
-## Quick Start
-
-### 1. Start the Vagrant VM
-
+Build and push both Docker image versions to Docker Hub:
 ```bash
-cd p3
-vagrant up
+./scripts/build_versions.sh hdameur12
 ```
 
-This will:
-- Create and provision the VM
-- Install all required tools
-- Set up the K3d cluster
-- Deploy ArgoCD
-- Deploy the application
+## Setup
 
-### 2. Access the Application
+```bash
+# 1. Start the VM (only installs base tools automatically)
+vagrant up
+
+# 2. SSH into the VM
+vagrant ssh
+
+# 3. Inside the VM: create the k3d cluster
+sudo /vagrant/scripts/setup_k3d_cluster.sh
+
+# 4. Install ArgoCD (note the printed admin password)
+sudo /vagrant/scripts/setup_argocd.sh
+
+# 5. Deploy the app via ArgoCD (GitOps - reads from GitHub)
+sudo /vagrant/scripts/deploy_app.sh
+```
+
+## Access ArgoCD UI
+
+In a separate terminal on your host machine:
+```bash
+kubectl port-forward svc/argocd-server -n argocd 8080:443
+```
+Then open: **https://localhost:8080** (username: `admin`)
+
+## Access the Application
 
 ```bash
 curl http://localhost:8888/
-# Expected output: {"status":"ok","message":"v1"}
+# Expected: {"message": "Hello from IoT App - version 1", "status": "ok", "version": "v1"}
 ```
 
-### 3. SSH into the VM (Optional)
+## GitOps Test: Switch v1 → v2
 
+Run inside the VM:
 ```bash
-vagrant ssh
+sudo /vagrant/scripts/test_gitops.sh
 ```
 
-Inside the VM, you can run:
+This script:
+1. Verifies v1 is running
+2. Updates `deployment.yaml` in GitHub to use `v2`
+3. Waits for ArgoCD to auto-sync
+4. Verifies v2 is now running
+
+Or manually:
 ```bash
-kubectl get pods -A
-kubectl get services -A
+# In your local clone of https://github.com/HamzaAmeur11/Hameur-iot-manifests
+sed -i 's/iot-app:v1/iot-app:v2/' deployment.yaml
+git add deployment.yaml && git commit -m "v2" && git push
+# Wait ~3 minutes, then:
+curl http://localhost:8888/
+# Expected: {"version": "v2", ...}
 ```
 
-### 4. Access ArgoCD Web UI (Optional)
-
-From inside the VM:
-```bash
-# Get ArgoCD password
-cat /vagrant/argocd-password.txt
-
-# Port forward (in the VM)
-kubectl port-forward -n argocd svc/argocd-server 8080:443
-```
-
-Then open https://localhost:8080 in your browser from the host (port 8080 is forwarded).
-
-## Project Structure
+## Repository Structure
 
 ```
 p3/
-├── Vagrantfile              # Vagrant configuration
-├── ips.conf                 # Network configuration
-├── README.md                # This file
+├── confs/
+│   ├── argocd-app.yaml     # ArgoCD Application (points to GitHub)
+│   ├── deployment.yaml     # App deployment (image tag = version)
+│   ├── service.yaml        # ClusterIP service
+│   └── ingress.yaml        # Traefik ingress
 ├── scripts/
-│   ├── install_tools.sh     # Install Docker, kubectl, k3d, ArgoCD
-│   ├── setup_k3d_cluster.sh # Create K3d cluster
-│   ├── setup_argocd.sh      # Install ArgoCD
-│   └── deploy_app.sh        # Deploy application
-└── confs/
-    ├── deployment.yaml      # Kubernetes Deployment
-    ├── service.yaml         # Kubernetes Service
-    ├── ingress.yaml         # Kubernetes Ingress
-    └── argocd-app.yaml      # ArgoCD Application manifest
+│   ├── install_tools.sh    # Docker, kubectl, k3d, argocd CLI
+│   ├── setup_k3d_cluster.sh
+│   ├── setup_argocd.sh
+│   ├── deploy_app.sh       # Applies argocd-app.yaml only
+│   ├── build_versions.sh   # Build & push v1+v2 to Docker Hub
+│   └── test_gitops.sh      # Automated v1→v2 GitOps test
+├── webapp/
+│   ├── app.py
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── .github/workflows/build.yml
+├── Vagrantfile
+├── ips.conf
+└── .gitignore
 ```
-
-## Common Commands
-
-### Stop the VM
-
-```bash
-vagrant halt
-```
-
-### Destroy the VM
-
-```bash
-vagrant destroy
-```
-
-### Restart the VM
-
-```bash
-vagrant reload
-```
-
-### Reprovision the VM
-
-```bash
-vagrant provision
-```
-
-### Check VM Status
-
-```bash
-vagrant status
-```
-
-## Network Configuration
-
-- **VM IP**: 192.168.56.110 (configured in `ips.conf`)
-- **Application Port**: 8888 (forwarded to host)
-- **ArgoCD Port**: 8080 (forwarded to host for optional testing)
-- **API Server Port**: 6443 (available if needed)
-
-## Specifications
-
-| Component | Value |
-|-----------|-------|
-| Cluster Name | `iot-cluster` |
-| Cluster Servers | 1 |
-| Cluster Agents | 2 |
-| Application Image | `wil42/playground:latest` |
-| Application Namespace | `dev` |
-| Application Port | 8888 |
-| ArgoCD Namespace | `argocd` |
-| VM Memory | 4096 MB |
-| VM CPUs | 2 |
-
-## Troubleshooting
-
-### Application not responding
-
-1. Check if the VM is running:
-   ```bash
-   vagrant status
-   ```
-
-2. SSH into the VM and check the deployment:
-   ```bash
-   vagrant ssh
-   kubectl get pods -n dev
-   kubectl describe pod -n dev
-   ```
-
-### K3d cluster not created
-
-1. SSH into the VM:
-   ```bash
-   vagrant ssh
-   ```
-
-2. Manually create the cluster:
-   ```bash
-   k3d cluster create iot-cluster --servers 1 --agents 2 --port 8888:80@loadbalancer
-   ```
-
-3. Export kubeconfig:
-   ```bash
-   k3d kubeconfig get iot-cluster > ~/.kube/config
-   ```
-
-### Kubernetes commands not working
-
-Make sure kubeconfig is set:
-```bash
-vagrant ssh
-export KUBECONFIG=/home/vagrant/.kube/config
-kubectl get pods -a
-```
-
-## Notes
-
-- All scripts are automatically executed during `vagrant up`
-- The VM has 4GB RAM and 2 CPUs (adjust in `Vagrantfile` if needed)
-- Port forwarding allows access from the host machine
-- The `confs/` folder is synced with the VM, so you can edit manifests from the host

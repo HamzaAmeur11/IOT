@@ -4,6 +4,7 @@ metadata:
   name: playground-ingress
   namespace: dev
 spec:
+  ingressClassName: traefik
   rules:
   - http:
       paths:
