@@ -26,3 +26,6 @@ __pycache__/
 *.pyc
 *.pyo
 .github
+.vagrant/
+k3s.yaml
+monitoring-info.txt

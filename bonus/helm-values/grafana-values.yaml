@@ -1,5 +1,4 @@
 # Grafana Configuration
-# https://github.com/grafana/helm-charts/tree/main/charts/grafana
 
 adminPassword: "admin123"
 adminUser: "admin"
@@ -13,18 +12,17 @@ persistence:
   size: 2Gi
   storageClassName: local-path
 
-# Pre-configured data source for Prometheus
+# Point to the Prometheus service created by kube-prometheus-stack
 datasources:
   datasources.yaml:
     apiVersion: 1
     datasources:
     - name: Prometheus
       type: prometheus
-      url: http://prometheus-operated:9090
+      url: http://prometheus-kube-prometheus-prometheus.monitoring.svc:9090
       access: proxy
       isDefault: true
 
-# Pre-configured dashboards
 dashboardProviders:
   dashboardproviders.yaml:
     apiVersion: 1
