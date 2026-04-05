@@ -58,6 +58,8 @@ if ! kubectl get nodes &>/dev/null; then
   exit 1
 fi
 
+alias k=kubectl
+
 # Label the server node as control-plane/master
 echo "Labeling server node: hameur-s"
 kubectl label node hameur-s node-role.kubernetes.io/master="" --overwrite

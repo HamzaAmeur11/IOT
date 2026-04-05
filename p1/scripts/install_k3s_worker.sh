@@ -40,6 +40,8 @@ while [ ! -f /vagrant/output/server_key.pub ]; do
   sleep 2
 done
 
+alias k=kubectl
+
 cat /vagrant/output/server_key.pub >> /home/vagrant/.ssh/authorized_keys
 echo "HELLO FROM WORKER"
 echo "Worker node joined successfully. Labels will be applied by the server node."
