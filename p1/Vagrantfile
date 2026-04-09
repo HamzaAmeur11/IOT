@@ -18,13 +18,13 @@ WORKER_IP = ips['WORKER_IP']
 
 Vagrant.configure("2") do |config|
   config.vm.boot_timeout = 600
-  config.vm.box = "bento/ubuntu-22.04"
+  config.vm.box = "bento/ubuntu-24.04"
 
   config.vm.define "HAMEUR-S", primary: true do |s|
     s.vm.hostname = "HAMEUR-S" # Server : controller node
     s.vm.network "private_network", ip: SERVER_IP
     s.vm.provider "virtualbox" do |v|
-      v.memory = 1024
+      v.memory = 512
       v.cpus = 1
     end
     s.vm.provision "shell", path: "scripts/install_k3s_server.sh"
@@ -34,7 +34,7 @@ Vagrant.configure("2") do |config|
     sw.vm.hostname = "HAMEUR-SW" # Server Worker: worker node
     sw.vm.network "private_network", ip: WORKER_IP
     sw.vm.provider "virtualbox" do |v|
-      v.memory =  1024
+      v.memory =  512
       v.cpus = 1
     end
     sw.vm.provision "shell", path: "scripts/install_k3s_worker.sh"

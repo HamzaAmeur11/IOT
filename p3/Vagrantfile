@@ -16,7 +16,7 @@ SERVER_IP = ips['SERVER_IP']
 
 Vagrant.configure("2") do |config|
   config.vm.boot_timeout = 600
-  config.vm.box = "bento/ubuntu-22.04"
+  config.vm.box = "bento/ubuntu-24.04"
 
   config.vm.define "HAMEUR-P3" do |s|
     s.vm.hostname = "HAMEUR-P3"

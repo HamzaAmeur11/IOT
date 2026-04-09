@@ -50,3 +50,5 @@ echo "  Password: $ARGOCD_PASSWORD"
 echo "  UI: https://localhost:8080 (after port-forward)"
 echo "============================================"
 echo ""
+touch /vagrant/output/argocd-password.txt
+echo "  Password: $ARGOCD_PASSWORD" >> /vagrant/output/argocd-password.txt
