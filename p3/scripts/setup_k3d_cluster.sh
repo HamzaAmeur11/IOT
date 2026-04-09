@@ -36,6 +36,12 @@ mkdir -p /home/vagrant/.kube
 k3d kubeconfig get iot-cluster > /home/vagrant/.kube/config
 chown -R vagrant:vagrant /home/vagrant/.kube
 
+# Also copy to /vagrant for host access
+mkdir -p /vagrant
+mkdir -p /vagrant/output
+cp /home/vagrant/.kube/config /vagrant/output/k3s.yaml
+chmod 644 /vagrant/output/k3s.yaml
+
 # Persist KUBECONFIG for vagrant user shell sessions
 grep -q "KUBECONFIG" /home/vagrant/.bashrc || \
     echo "export KUBECONFIG=/home/vagrant/.kube/config" >> /home/vagrant/.bashrc

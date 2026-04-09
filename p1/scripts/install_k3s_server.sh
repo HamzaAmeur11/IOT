@@ -7,7 +7,8 @@ source /vagrant/ips.conf
 # --node-ip: Explicitly set the IP for the node
 # --flannel-iface: Interface for the flannel CNI (usually eth1 for private network in Vagrant)
 # We use --write-kubeconfig-mode 644 to make it readable
-curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --node-ip $SERVER_IP --flannel-iface eth1 --write-kubeconfig-mode 644" sh -
+# --tls-san: Add SERVER_IP to SSL certificate so it's valid for external connections
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --node-ip $SERVER_IP --flannel-iface eth1 --write-kubeconfig-mode 644 --tls-san $SERVER_IP" sh -
 
 # Wait for token to be generated
 while [ ! -f /var/lib/rancher/k3s/server/node-token ]; do
@@ -24,6 +25,9 @@ sudo chmod 644 /vagrant/output/node-token
 # Copy kubeconfig to shared folder for host access
 sudo cp /etc/rancher/k3s/k3s.yaml /vagrant/output/k3s.yaml
 sudo chmod 644 /vagrant/output/k3s.yaml
+
+# Fix kubeconfig to use SERVER_IP instead of localhost
+sudo sed -i "s|https://127.0.0.1:6443|https://$SERVER_IP:6443|g" /vagrant/output/k3s.yaml
 
 # Copy kubectl binary if exists
 if [ -f /usr/local/bin/kubectl ]; then
@@ -44,6 +48,10 @@ echo "HELLO FROM SERVER"
 # Label this node as master/control-plane and wait for worker to join
 export KUBECONFIG=/vagrant/output/k3s.yaml
 
+# Add kubectl alias for vagrant user
+echo "alias k='kubectl'" >> /home/vagrant/.bashrc
+echo "export KUBECONFIG=/vagrant/output/k3s.yaml" >> /home/vagrant/.bashrc
+
 # Wait for kubectl to be ready (K3s API server must be ready)
 echo "Waiting for K3s API server to be ready..."
 WAIT_COUNT=0
@@ -58,34 +66,14 @@ if ! kubectl get nodes &>/dev/null; then
   exit 1
 fi
 
-alias k=kubectl
-
 # Label the server node as control-plane/master
 echo "Labeling server node: hameur-s"
 kubectl label node hameur-s node-role.kubernetes.io/master="" --overwrite
 kubectl label node hameur-s node-role.kubernetes.io/control-plane="" --overwrite
 echo "Labeled server node: hameur-s"
 
-# # Wait for worker node to join the cluster (up to 5 minutes)
-# echo "Waiting for worker node to join..."
-# WAIT_COUNT=0
-# while ! kubectl get node hameur-sw &>/dev/null && [ $WAIT_COUNT -lt 150 ]; do
-#   NODE_COUNT=$(kubectl get node --no-headers 2>/dev/null | wc -l)
-#   echo "Current nodes: $NODE_COUNT ($WAIT_COUNT/150)"
-#   sleep 2
-#   WAIT_COUNT=$((WAIT_COUNT + 1))
-# done
-
-# if ! kubectl get node hameur-sw &>/dev/null; then
-#   echo "WARNING: Worker node did not join within 5 minutes. Cluster may still be initializing."
-#   exit 1
-# fi
-
-# # Wait a bit more for worker to be ready
-# sleep 5
-
-# # Label the worker node
-# echo "Labeling worker node: hameur-sw"
-# kubectl label node hameur-sw node-role.kubernetes.io/worker="" --overwrite
-# echo "Labeled worker node: hameur-sw"
-# echo "Cluster setup complete!"
+# Add kubectl alias for convenience (on host machine, add to ~/.bashrc or ~/.zshrc)
+echo "Setup complete! To use kubectl on your host machine:"
+echo "  1. Install kubectl: curl -LO https://dl.k8s.io/release/\$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl"
+echo "  2. Export kubeconfig: export KUBECONFIG=$(pwd)/k3s.yaml"
+echo "  3. Add alias: echo \"alias k='kubectl'\" >> ~/.bashrc && source ~/.bashrc"

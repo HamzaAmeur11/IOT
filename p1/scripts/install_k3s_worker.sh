@@ -43,5 +43,10 @@ done
 alias k=kubectl
 
 cat /vagrant/output/server_key.pub >> /home/vagrant/.ssh/authorized_keys
+
+# Add kubectl alias for vagrant user
+echo "alias k='kubectl'" >> /home/vagrant/.bashrc
+echo "export KUBECONFIG=/vagrant/output/k3s.yaml" >> /home/vagrant/.bashrc
+
 echo "HELLO FROM WORKER"
 echo "Worker node joined successfully. Labels will be applied by the server node."
